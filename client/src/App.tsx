@@ -2,7 +2,7 @@ function App() {
 
   return (
     <>
-      <div className='text-2xl'>Hello world!!</div>
+      <div className='text-2xl'>PayTM project initialized!!</div>
     </>
   )
 }
