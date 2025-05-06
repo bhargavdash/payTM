@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from 'zod';
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import User from "../db";
+import {Account, User} from "../db";
 import dotenv from 'dotenv'
 import userMiddleware from "../middleware/userMiddleware";
 import { Request } from "express";
@@ -29,7 +29,7 @@ const signupBody = z.object({
 })
 
 // signup route
-router.post('/user/signup', async(req, res): Promise<any> => {
+router.post('/signup', async(req, res): Promise<any> => {
 
     try{
         // parse the body through zod
@@ -55,7 +55,15 @@ router.post('/user/signup', async(req, res): Promise<any> => {
             return res.status(411).json({error: "User with the same username already exists"})
         }
         // user created successfully , acknowledge the user
-        return res.status(200).json({message: "User created successfully!!", user: user})
+        // give user a random balance from 1 to 1000
+        const balance = Math.floor(Math.random()*10000)
+
+        // set balance for that user in his account 
+        const accountBalance = await Account.create({
+            userId: user._id,
+            balance: balance
+        })
+        return res.status(200).json({message: "User created successfully!!", user: user, balance: accountBalance})
 
     } catch(err){
         console.log(err);
@@ -76,7 +84,7 @@ const signinBody = z.object({
               }),
 })
 // signin route
-router.post('/user/signin', async(req, res): Promise<any> => {
+router.post('/signin', async(req, res): Promise<any> => {
     try{
         // parse the input body
         const {success, error} = signinBody.safeParse(req.body);
@@ -117,7 +125,7 @@ interface CustomRequest extends Request{
 }
 
 // authenticated route
-router.get('/user/profile',userMiddleware, (req: CustomRequest, res)=> {
+router.get('/profile',userMiddleware, (req: CustomRequest, res)=> {
     const userId = req.userId;
     res.send(userId)
 })
@@ -134,7 +142,7 @@ const updateBody = z.object({
     lastName: z.string().optional()
 })
 
-router.put('/user/update',userMiddleware, async(req: UpdateRequest, res): Promise<any> => {
+router.put('/update',userMiddleware, async(req: UpdateRequest, res): Promise<any> => {
     try{
         // extract details from body , it contains either 3 of them , or 1
         const {success, error} = updateBody.safeParse(req.body);

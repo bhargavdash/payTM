@@ -17,7 +17,7 @@ const express_1 = require("express");
 const zod_1 = require("zod");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const db_1 = __importDefault(require("../db"));
+const db_1 = require("../db");
 const dotenv_1 = __importDefault(require("dotenv"));
 const userMiddleware_1 = __importDefault(require("../middleware/userMiddleware"));
 dotenv_1.default.config();
@@ -36,7 +36,7 @@ const signupBody = zod_1.z.object({
     lastName: zod_1.z.string().max(20)
 });
 // signup route
-router.post('/user/signup', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/signup', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // parse the body through zod
         const { success, error } = signupBody.safeParse(req.body);
@@ -46,7 +46,7 @@ router.post('/user/signup', (req, res) => __awaiter(void 0, void 0, void 0, func
         // extract details from request
         const { username, password, firstName, lastName } = req.body;
         const hashedPassword = yield bcrypt_1.default.hash(password, 5);
-        const user = yield db_1.default.create({
+        const user = yield db_1.User.create({
             username: username,
             password: hashedPassword,
             firstName: firstName,
@@ -57,7 +57,14 @@ router.post('/user/signup', (req, res) => __awaiter(void 0, void 0, void 0, func
             return res.status(411).json({ error: "User with the same username already exists" });
         }
         // user created successfully , acknowledge the user
-        return res.status(200).json({ message: "User created successfully!!", user: user });
+        // give user a random balance from 1 to 1000
+        const balance = Math.floor(Math.random() * 10000);
+        // set balance for that user in his account 
+        const accountBalance = yield db_1.Account.create({
+            userId: user._id,
+            balance: balance
+        });
+        return res.status(200).json({ message: "User created successfully!!", user: user, balance: accountBalance });
     }
     catch (err) {
         console.log(err);
@@ -75,7 +82,7 @@ const signinBody = zod_1.z.object({
     }),
 });
 // signin route
-router.post('/user/signin', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/signin', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // parse the input body
         const { success, error } = signinBody.safeParse(req.body);
@@ -85,7 +92,7 @@ router.post('/user/signin', (req, res) => __awaiter(void 0, void 0, void 0, func
         // extract data from body 
         const { username, password } = req.body;
         // check if the user exists 
-        const user = yield db_1.default.findOne({ username: username });
+        const user = yield db_1.User.findOne({ username: username });
         if (!user) {
             // user does not exist
             return res.status(411).json({ error: "User does not exist" });
@@ -108,7 +115,7 @@ router.post('/user/signin', (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 }));
 // authenticated route
-router.get('/user/profile', userMiddleware_1.default, (req, res) => {
+router.get('/profile', userMiddleware_1.default, (req, res) => {
     const userId = req.userId;
     res.send(userId);
 });
@@ -117,7 +124,7 @@ const updateBody = zod_1.z.object({
     firstName: zod_1.z.string().optional(),
     lastName: zod_1.z.string().optional()
 });
-router.put('/user/update', userMiddleware_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put('/update', userMiddleware_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // extract details from body , it contains either 3 of them , or 1
         const { success, error } = updateBody.safeParse(req.body);
@@ -126,7 +133,6 @@ router.put('/user/update', userMiddleware_1.default, (req, res) => __awaiter(voi
         }
         // find the user using middleware
         const userId = req.userId;
-        console.log(userId);
         const { password, firstName, lastName } = req.body;
         const updateFields = {};
         if (password)
@@ -135,8 +141,7 @@ router.put('/user/update', userMiddleware_1.default, (req, res) => __awaiter(voi
             updateFields.firstName = firstName;
         if (lastName)
             updateFields.lastName = lastName;
-        console.log(updateFields);
-        const updatedUser = yield db_1.default.findByIdAndUpdate(userId, {
+        const updatedUser = yield db_1.User.findByIdAndUpdate(userId, {
             $set: updateFields
         }, {
             new: true, runValidators: true
