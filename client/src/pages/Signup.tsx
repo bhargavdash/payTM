@@ -64,7 +64,8 @@ export const Signup = () =>{
             <div>
                 <Button 
                 text="Sign Up"
-                onClick={() => signupUser()} />
+                onClick={() => signupUser()} 
+                size="md"/>
             </div>
             <div className="flex">
                 <p>Already have an account?&nbsp;</p>

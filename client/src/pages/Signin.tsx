@@ -48,7 +48,8 @@ export const Signin = () => {
                 <div>
                     <Button 
                     text="Sign In"
-                    onClick={() => signinUser()} />
+                    onClick={() => signinUser()}
+                    size="md" />
                 </div>
                 <div className="flex">
                     <p>Don't have an account?&nbsp;</p>
