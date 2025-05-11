@@ -6,6 +6,7 @@ import {Account, User} from "../db";
 import dotenv from 'dotenv'
 import userMiddleware from "../middleware/userMiddleware";
 import { Request } from "express";
+import mongoose from "mongoose";
 
 dotenv.config();
 
@@ -125,9 +126,31 @@ interface CustomRequest extends Request{
 }
 
 // authenticated route
-router.get('/profile',userMiddleware, (req: CustomRequest, res)=> {
-    const userId = req.userId;
-    res.send(userId)
+router.get('/profile',userMiddleware, async (req: CustomRequest, res): Promise<any> => {
+    try{
+        const userId = req.userId;
+        const user = await User.findOne({_id: userId});
+
+        if(!user){
+            return res.status(400).json({error: "User not found"})
+        }
+
+        const accountDetails = await Account.findOne({userId: userId});
+        if(!accountDetails){
+            return res.status(400).json({error: "Account not found"})
+        }
+
+        const responseBody = {
+            username: user?.username,
+            firstName: user?.firstName,
+            lastName: user?.lastName,
+            balance: accountDetails?.balance
+        }
+        return res.status(200).json({user: responseBody})
+    } catch(err){
+        console.log(err);
+        return res.status(400).json({error: err})
+    }
 })
 
 interface UpdateRequest extends CustomRequest {
@@ -178,6 +201,23 @@ router.put('/update',userMiddleware, async(req: UpdateRequest, res): Promise<any
         // update failed
         else return res.status(400).json({error: "Cannot update user details"});
 
+    } catch(err){
+        console.log(err);
+        return res.status(400).json({error: err})
+    }
+})
+
+
+// endpoint to search user 
+router.get('/find', userMiddleware, async (req, res): Promise<any> => {
+    try{
+        const users = await User.find({
+            $or: [
+            {firstName: {$regex: `^${req.query.search}`, $options: 'i'}},
+            {lastName: {$regex: `^${req.query.search}`, $options: 'i'}}]
+        })
+
+        return res.status(200).json({users: users})
     } catch(err){
         console.log(err);
         return res.status(400).json({error: err})

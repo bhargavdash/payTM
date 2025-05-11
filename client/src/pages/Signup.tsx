@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom"
 import { Button } from "../components/Button"
 import { InputField } from "../components/InputField"
 import { useRef } from "react"
+import axios from "axios"
 
 export const Signup = () =>{
     const firstNameRef = useRef<HTMLInputElement>(null);
@@ -15,7 +16,7 @@ export const Signup = () =>{
         navigate('/signin');
     }
 
-    const signupUser = () => {
+    const signupUser = async () => {
         // collect data from user
         const firstName = firstNameRef.current?.value;
         const lastName = lastNameRef.current?.value;
@@ -27,9 +28,15 @@ export const Signup = () =>{
         console.log(username)
         console.log(password)
 
-        // send backend request
-        // clear the input fields ?? 
-        // navigate user to dashboard
+        const response = await axios.post("http://localhost:3000/api/v1/user/signup", {
+            firstName: firstName,
+            lastName: lastName,
+            username: username,
+            password: password
+        })
+
+        console.log(response.data)
+        navigate('/signin')
     }
 
     return <>

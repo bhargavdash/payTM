@@ -1,17 +1,24 @@
 import { useState } from "react"
 import { ProfilePic } from "./ProfilePic"
 import { SignOut } from "./SignOut"
+import { useNavigate } from "react-router-dom"
 
 interface HeaderProps{
-    username: string
+    firstName: string
 }
 
 export const Header = (props: HeaderProps) => {
     const [openSignOut, setOpenSignOut] = useState(false)
+    const navigate = useNavigate()
 
 
     const toggleSignOut = () => {
         setOpenSignOut(s => !s)
+    }
+
+    const signOutUser = () => {
+        localStorage.removeItem("token");
+        navigate('/signin')
     }
 
     return <>
@@ -21,11 +28,11 @@ export const Header = (props: HeaderProps) => {
         </div>
         <div className="flex gap-6 items-center">
             <div>
-                Hello , {props.username}
+                Hello , {props.firstName}
             </div>
             <div>
                 <ProfilePic
-                 initial={props.username[0].toUpperCase()} 
+                 initial={props.firstName[0].toUpperCase()} 
                  onClick={() => toggleSignOut()}
                 />
             </div>
@@ -33,7 +40,7 @@ export const Header = (props: HeaderProps) => {
     </div>
     {openSignOut && <div className=''>
         <SignOut 
-         onClick={() => alert("Signout clicked")}/>
+         onClick={() => signOutUser()}/>
         </div>}
     </>
 }

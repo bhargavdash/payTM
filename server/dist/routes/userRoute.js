@@ -115,10 +115,30 @@ router.post('/signin', (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 }));
 // authenticated route
-router.get('/profile', userMiddleware_1.default, (req, res) => {
-    const userId = req.userId;
-    res.send(userId);
-});
+router.get('/profile', userMiddleware_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = req.userId;
+        const user = yield db_1.User.findOne({ _id: userId });
+        if (!user) {
+            return res.status(400).json({ error: "User not found" });
+        }
+        const accountDetails = yield db_1.Account.findOne({ userId: userId });
+        if (!accountDetails) {
+            return res.status(400).json({ error: "Account not found" });
+        }
+        const responseBody = {
+            username: user === null || user === void 0 ? void 0 : user.username,
+            firstName: user === null || user === void 0 ? void 0 : user.firstName,
+            lastName: user === null || user === void 0 ? void 0 : user.lastName,
+            balance: accountDetails === null || accountDetails === void 0 ? void 0 : accountDetails.balance
+        };
+        return res.status(200).json({ user: responseBody });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(400).json({ error: err });
+    }
+}));
 const updateBody = zod_1.z.object({
     password: zod_1.z.string().optional(),
     firstName: zod_1.z.string().optional(),
@@ -152,6 +172,22 @@ router.put('/update', userMiddleware_1.default, (req, res) => __awaiter(void 0, 
         // update failed
         else
             return res.status(400).json({ error: "Cannot update user details" });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(400).json({ error: err });
+    }
+}));
+// endpoint to search user 
+router.get('/find', userMiddleware_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const users = yield db_1.User.find({
+            $or: [
+                { firstName: { $regex: `^${req.query.search}`, $options: 'i' } },
+                { lastName: { $regex: `^${req.query.search}`, $options: 'i' } }
+            ]
+        });
+        return res.status(200).json({ users: users });
     }
     catch (err) {
         console.log(err);
